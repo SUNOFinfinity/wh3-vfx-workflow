@@ -1,0 +1,12 @@
+{
+  "_comment": "Copy to wh3_vfx_config.json (or let install.ps1 generate it). Omit any key to use automatic discovery.",
+  "WH3_GAME_DIR": "C:/Program Files (x86)/Steam/steamapps/common/Total War WARHAMMER III",
+  "PYTHON_EXE": ".venv/Scripts/python.exe",
+  "TEXCONV_PATH": "tools/texconv/texconv.exe",
+  "FFMPEG_PATH": "tools/ffmpeg/bin/ffmpeg.exe",
+  "ANGLE_DLL_DIR": "",
+  "HOUDINI_BIN_DIR": "",
+  "RPFM_CLI": "tools/rpfm/rpfm_cli.exe",
+  "RPFM_SCHEMA": "tools/rpfm/schema_wh3.ron",
+  "ASSETEDITOR_DIR": "tools/AssetEditor"
+}

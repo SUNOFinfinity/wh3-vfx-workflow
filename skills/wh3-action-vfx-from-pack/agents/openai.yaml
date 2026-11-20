@@ -1,0 +1,5 @@
+interface:
+  display_name: "战锤3 · 动作与模型特效联调"
+  short_description: "从战锤3角色包提取原模型与动作，在 Houdini 和沙箱中对齐特效挂点"
+  default_prompt: "用 $wh3-action-vfx-from-pack 从我的 Pack 提取目标角色和动作，在真实蒙皮模型上预览特效，审片前不要修改原包。"
+

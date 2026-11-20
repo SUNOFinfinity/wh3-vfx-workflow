@@ -1,0 +1,24 @@
+# Python & virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+
+# Machine-local configuration, downloaded binaries, caches & scratch work
+wh3_vfx_config.json
+baker/wh3_vfx_config.json
+tools/
+work/
+out/
+*.log
+
+# Generated media, packs & DCC temp files
+*.pack
+*.bak*
+*.hip*
+*.mp4
+*.dds
+*.npz
+.DS_Store
+Thumbs.db

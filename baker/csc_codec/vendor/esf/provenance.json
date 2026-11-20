@@ -1,0 +1,27 @@
+{
+  "files": [
+    {
+      "name": "LICENSE",
+      "sha256": "f34d65215cb2777d5dab0541008056b4a469975e04d439fb629d11600a3634a9"
+    },
+    {
+      "name": "package.json",
+      "sha256": "b6a3184e769ef509ecb4a351f11861e885627c9138ecd4f99080fa237c3e0f5f"
+    },
+    {
+      "name": "rpfm_lib_esf_wasm_bg.wasm",
+      "sha256": "d1aa3f22d01a3d152b2af3d0e4364bffa595675a21a3355d486ffba014ebb883"
+    },
+    {
+      "name": "rpfm_lib_esf_wasm.d.ts",
+      "sha256": "3938d69fc7b69ad16e78cf03121bda9c7a782eb924897b425b1e88e1745dfd7b"
+    },
+    {
+      "name": "rpfm_lib_esf_wasm.js",
+      "sha256": "f9d8568e94965be8ded61d32ada2b7724f817351258ce64e37dd8fb18974a75e"
+    }
+  ],
+  "repository": "https://github.com/IMRZ/rpfm_lib_esf_wasm",
+  "releaseCommit": "ca6977e5e89d72117a8da65a2a63d287d7e9f670",
+  "licenseSource": "https://raw.githubusercontent.com/IMRZ/rpfm_lib_esf_wasm/main/LICENSE"
+}

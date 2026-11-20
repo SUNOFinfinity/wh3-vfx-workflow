@@ -1,0 +1,4 @@
+interface:
+  display_name: "特效美术指导"
+  short_description: "主动判断特效主形、材质、受力运动与节奏，用实际画面决定取舍和精修"
+  default_prompt: "使用 $vfx-art-direction 担任这次特效的美术指导，保留既定事件与时序，先指出最影响观感的缺陷并完成针对性精修，再展示多角度动态预览。"

@@ -1,0 +1,8 @@
+interface:
+  display_name: "战锤3 · 特效制作与沙箱审片"
+  short_description: "从标准 IR 编译独立沙箱，回读生成双视角视频与多环境诊断图"
+  brand_color: "#F97316"
+  default_prompt: "用 $wh3-vfx-author-preview 制作这个特效，从沙箱回读视频供我审片，暂不写目标 MOD 包。"
+
+policy:
+  allow_implicit_invocation: true

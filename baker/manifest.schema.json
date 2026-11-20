@@ -1,0 +1,475 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wh3-vfx-baker.local/schemas/manifest.schema.json",
+  "title": "WH3 Route-A Universal VFX IR Manifest (v1.0)",
+  "description": "Strict intermediate representation (IR) contract between Houdini/DCC/AI generators and wh3_vfx_baker for Total War: WARHAMMER III (Route A vanilla-compatible shaders).",
+  "type": "object",
+  "required": ["schema_version", "meta", "archetype", "host_binding", "textures", "meshes", "materials"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "meta": {
+      "type": "object",
+      "required": ["effect_id", "prefix", "duration_sec"],
+      "additionalProperties": false,
+      "properties": {
+        "effect_id": { "type": "string", "pattern": "^[a-z0-9_]{3,64}$" },
+        "prefix": { "type": "string", "pattern": "^[a-z0-9_]{2,24}$" },
+        "display_name": { "type": "string" },
+        "author": { "type": "string" },
+        "source_dcc": { "type": "string", "description": "e.g. Houdini 22.0 / Procedural Python" },
+        "source_file": { "type": "string" },
+        "duration_sec": { "type": "number", "exclusiveMinimum": 0, "maximum": 120 },
+        "looping": { "type": "boolean", "default": false },
+        "cull_distances": {
+          "type": "array",
+          "items": { "type": "number", "minimum": 100, "maximum": 10000 },
+          "minItems": 2,
+          "maxItems": 2,
+          "default": [3000, 3750]
+        },
+        "sync_render_pass_qualities": { "type":"boolean", "default":false, "description":"Declare the Q0 native pass also in otherwise missing Q1/Q2 render stacks." },
+        "preview_framing_m": { "type": "array", "description": "Optional auto camera framing: world bottom Y, top Y, and foot shot radius, in metres.", "items": { "type": "number" }, "minItems": 3, "maxItems": 3 },
+        "preview_phases_sec": {
+          "type": "array",
+          "items": { "type": "number", "minimum": 0 },
+          "minItems": 1,
+          "maxItems": 12
+        }
+      }
+    },
+    "archetype": {
+      "type": "string",
+      "enum": [
+        "sky_beam_vortex",
+        "projectile_trail",
+        "explosion_shockwave",
+        "aura_buff_debuff",
+        "fluid_shatter_vat"
+      ]
+    },
+    "host_binding": {
+      "type": "object",
+      "required": ["wrappers"],
+      "additionalProperties": false,
+      "properties": {
+        "wrappers": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["vfx_key", "library_base"],
+            "additionalProperties": false,
+            "properties": {
+              "vfx_key": { "type": "string", "minLength": 3 },
+              "library_base": { "type": "string", "minLength": 3, "description":"Unique generated library key, distinct from wrapper and other library keys; pages append _pNN." },
+              "terrain_attach": { "type":"string", "enum":["map_zero_y_to_terrain","map_zero_y_to_terrain_and_align"], "description":"Match the hosting CSC VFX_ELEMENT. Ground wrapper emits in world space and follows terrain; sky wrapper stays local and vertical." },
+              "host_csc": {"type":"string","description":"Optional internal CSC path in the read-only host pack or vanilla data. Preflight must find this wrapper key in a decoded VFX_ELEMENT."},
+              "pos_xyz": {"type":"array","items":{"type":"number"},"minItems":3,"maxItems":3,"description":"Native wrapper reference translation, metres."},
+              "rot_xyz": {"type":"array","items":{"type":"number"},"minItems":3,"maxItems":3,"description":"Native wrapper rot_x/y/z, copied without unit conversion."},
+              "infinite_life": {"type":"boolean","description":"Defaults to meta.looping. Set explicitly for a persistent reference."},
+              "simulation_speed_multiplier": {"type":"number","description":"Native nested VFX reference playback multiplier; default 1."},
+              "template_wrapper_pack_path": { "type": "string", "description":"Legacy provenance only. This compiler builds a wrapper from the declared references; it does not patch the template." },
+              "delay_sec": { "type": "number", "minimum": 0, "default": 0 },
+              "scale": { "type": "number", "exclusiveMinimum": 0, "maximum": 30, "default": 1.0 },
+              "particle_effects_table_keys": {
+                "description":"Additional explicit particle-effect registration keys, appended to generated library page keys in declaration order.",
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "target_db_table": {
+          "type": "string",
+          "default": "db/particle_effects_tables/data__", "description":"Legacy host-table hint only. Output is always a separate particle_effects_tables/<prefix>_<effect> slice; vanilla data__ is not overwritten."
+        }
+      }
+    },
+    "textures": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["source_path", "pack_path", "usage", "format"],
+        "additionalProperties": false,
+        "properties": {
+          "source_path": { "type": "string", "description": "Relative path inside IR dir (.png/.npy/.npz/.exr)" },
+          "pack_path": { "type": "string", "pattern": "^vfx/.*\\.dds$" },
+          "usage": {
+            "type": "string",
+            "enum": [
+              "mesh_flux",
+              "mesh_global_mask",
+              "mesh_colour_overlay",
+              "decal_emissive",
+              "decal_scorch",
+              "particle_optical",
+              "particle_flipbook",
+              "distortion_normal",
+              "vectorfield_3d",
+              "vat_position_2d",
+              "vat_normal_2d", "vat_uv_2d"
+            ]
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "BC7_UNORM_SRGB",
+              "BC7_UNORM",
+              "BC3_UNORM_DXT5NM",
+              "A16B16G16R16F_3D",
+              "A32B32G32R32F_2D"
+            ]
+          },
+          "target_size": {
+            "type": "array",
+            "items": { "type": "integer", "minimum": 32, "maximum": 4096 },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "tileable": { "type": "boolean", "default": false },
+          "source_color_space": {
+            "type": "string",
+            "enum": ["auto", "srgb", "linear"],
+            "default": "auto",
+            "description": "auto = srgb for .png, linear for .npy/.npz (prevents double-sRGB washout!)"
+          },
+          "srgb_alpha_oetf": { "type": "boolean" },
+          "premultiply_alpha": { "type": "boolean", "default": false },
+          "exact_zero_distortion_border": { "type":"boolean", "default":false, "description":"DXT5nm only: exact zero in the native AG signed remap on the outer 8 texels." },
+          "require_zero_border": { "type": "boolean", "default": true },
+          "flipbook_grid": {
+            "type": "array",
+            "items": { "type": "integer", "minimum": 1, "maximum": 16 },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "bounds_min": { "$ref": "#/$defs/vec3" },
+          "bounds_max": { "$ref": "#/$defs/vec3" }
+        }
+      }
+    },
+    "meshes": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["source_npz", "rmv2_pack_path", "wsmodel_pack_path", "material_id", "uv_v_direction"],
+        "additionalProperties": false,
+        "properties": {
+          "rigid_root_bone": { "const":"building" },
+          "donor_profile": {"type":"string","enum":["cylinder","sphere","plane"],"default":"cylinder","description":"Verified v7 static LOD0 donors only; sphere inherits 10000m LOD distance, plane and cylinder 5000m. All rebuild bounds and reset pivot."},
+          "source_npz": { "type": "string", "description": "Relative path to .npz with vertices, indices, normals, uvs, optional colors/coverage" },
+          "rmv2_pack_path": { "type": "string", "pattern": "^vfx/.*\\.rigid_model_v2$" },
+          "wsmodel_pack_path": { "type": "string", "pattern": "^vfx/.*\\.wsmodel$" },
+          "material_id": { "type": "string" },
+          "uv_v_direction": {
+            "type": "string",
+            "enum": ["up", "down", "outward", "inward", "radial", "planar"]
+          },
+          "double_sided": { "type": "boolean", "default": false },
+          "prescale_xyz": { "$ref": "#/$defs/vec3" },
+          "auto_fix_winding": { "type": "boolean", "default": true },
+          "coverage_is_linear": { "type": "boolean", "default": true }
+        }
+      }
+    },
+    "materials": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["pack_path", "shader", "glow_colour", "glow_strength", "total_alpha_strength"],
+        "additionalProperties": false,
+        "properties": {
+          "pack_path": { "type": "string", "pattern": "^vfx/.*\\.xml\\.material$" },
+          "shader": {
+            "type": "string",
+            "enum": [
+              "wh_vfx_mesh_vertex_anim",
+              "wh3_rigid_baked_fluid_simulation",
+              "vfx_rigid_unlit_emissive_fresnel",
+              "wh3_vfx_distortion_mesh"
+            ]
+          },
+          "tex_a": { "type": "string" },
+          "tex_b": { "type": "string" },
+          "tex_c": { "type": "string" },
+          "global_mask": { "description":"Texture ID; vanilla mesh shader samples R, not G.", "type": "string" },
+          "colour_overlay": { "type": "string" },
+          "scroll_a": { "$ref": "#/$defs/vec2" },
+          "tile_a": { "$ref": "#/$defs/vec2" },
+          "scroll_b": { "$ref": "#/$defs/vec2" },
+          "tile_b": { "$ref": "#/$defs/vec2" },
+          "scroll_c": { "$ref": "#/$defs/vec2" },
+          "tile_c": { "$ref": "#/$defs/vec2" },
+          "global_mask_tile": { "$ref": "#/$defs/vec2" },
+          "global_mask_pan": { "$ref": "#/$defs/vec2" },
+          "colour_overlay_tile": { "$ref": "#/$defs/vec2" },
+          "colour_overlay_pan": { "$ref": "#/$defs/vec2" },
+          "colour_overlay_strength": { "type": "number", "minimum": 0, "maximum": 10, "default": 1.0 },
+          "glow_colour": { "$ref": "#/$defs/vec3" },
+          "glow_strength": { "type": "number", "minimum": 0, "maximum": 60 },
+          "total_alpha_strength": { "type": "number", "minimum": 0, "maximum": 4.0 },
+          "brightness_abc": { "$ref": "#/$defs/vec3", "description": "WH3 scrolling_brightness/2/3 multipliers for texA/B/C (default [1.45,1.45,1.45])" },
+          "normal_fade_in_out": { "type": "number", "minimum": 0, "maximum": 1, "description": "Direct WH3 normal_fade_in_out (0=rim glow, 0.5=flat 0.5x, 1=edge fade)" },
+          "fresnel_power": { "type": "number", "minimum": 0, "maximum": 12, "default": 1.0 },
+          "panning_tex_direction": { "$ref": "#/$defs/vec2" },
+          "panning_texture_scale": { "$ref": "#/$defs/vec2" },
+          "distortion_tex_strength": { "type":"number", "minimum":0 },
+          "fresnel_strength": { "type": "number", "minimum": 0, "maximum": 5, "default": 0.0 },
+          "depth_fade_distance": { "type": "number", "minimum": 0, "maximum": 20, "default": 0.5 },
+          "vertex_displacement": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.0 },
+          "vertex_disp_scale": { "type": "number", "minimum": 0, "maximum": 5, "default": 0.2 },
+          "vertex_disp_tile": { "$ref": "#/$defs/vec2" },
+          "vertex_disp_scroll": { "$ref": "#/$defs/vec2" },
+          "disp_tex": { "type": "string" },
+          "vertex_anim": {"type":"number","default":0,"description":"Native oscillator multiplier (zero disables); distinct from spatial phase scale."},
+          "vertex_anim_speed":{"type":"number","default":0,"description":"Time phase coefficient used by the native vertex oscillator."},
+          "vertex_oscilation_scale": { "type": "number", "minimum": 0, "maximum": 5, "default": 0.0 },
+          "vertex_amp_xyz": { "$ref": "#/$defs/vec3" },
+          "vertex_freq_xyz": { "$ref": "#/$defs/vec3" },
+          "sort_override": { "type": "integer", "minimum": 0, "maximum": 255, "default": 255 },
+          "tex_a_channels": { "type": "string", "default": "1,0,0,0" },
+          "tex_b_channels": { "type": "string", "default": "1,0,0,0" },
+          "tex_c_channels": { "type": "string", "default": "1,0,0,0" },
+          "vat_uv_tex": { "type":"string", "description":"Opt into the WH3 DLC23 native VAT material: a float4 UV atlas with dimensions matching the position and normal atlases. Mesh UV0 addresses the first frame band; position RGB is absolute model-space XYZ." },
+          "vat_pos_tex": { "type": "string" },
+          "vat_nrm_tex": { "type": "string" },
+          "vat_fps": { "type": "number", "default": 30.0 },
+          "vat_frame_count": { "type": "integer", "default": 60 },
+          "vat_bounds_min": { "$ref": "#/$defs/vec3" },
+          "vat_bounds_max": { "$ref": "#/$defs/vec3" },
+          "alpha_cutoff": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.0 }
+        }
+      }
+    },
+    "rigid_emitters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "wrapper_vfx_key", "mesh_id", "start_time", "life_time", "terrain_attach"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "pattern": "^[A-Za-z0-9_]{2,64}$" },
+          "wrapper_vfx_key": { "type": "string" },
+          "anim_source": { "type":"string" },
+          "anim_pack_path": { "type":"string","pattern":"^animations/.*\\.anim$" },
+          "anim_speed": { "type":"number","exclusiveMinimum":0 },
+          "mesh_id": { "type": "string" },
+          "start_time": { "type": "number", "minimum": 0 },
+          "life_time": { "type": "number", "exclusiveMinimum": 0 },
+          "terrain_attach": {
+            "type": "string",
+            "enum": ["none", "map_zero_y_to_terrain", "map_zero_y_to_terrain_and_align"]
+          },
+          "position_curve": { "$ref": "#/$defs/vec3_curve" },
+          "rotation_deg_curve": { "$ref": "#/$defs/vec3_curve" },
+          "initial_rotation_deg": { "$ref": "#/$defs/vec3" },
+          "spin_deg_per_sec": { "type": "number", "default": 0.0 },
+          "random_yaw": { "type": "boolean", "default": false },
+          "gravity": { "type": "number", "default": 0.0 },
+          "window_sec": { "type": "number", "minimum": 0.01 },
+          "scale_curve": { "$ref": "#/$defs/vec3_curve" },
+          "colour_curve": { "$ref": "#/$defs/vec3_curve" },
+          "brightness_curve": { "$ref": "#/$defs/scalar_curve" },
+          "alpha_curve": { "$ref": "#/$defs/scalar_curve" },
+          "emission_rate": { "type": "number", "minimum": 0, "default": 0 },
+          "burst_count": { "type": "integer", "minimum": 1, "maximum": 32, "default": 1 }
+        }
+      }
+    },
+    "particle_emitters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "wrapper_vfx_key",
+          "texture_id",
+          "render_pass",
+          "pre_multiplied_alpha",
+          "start_time",
+          "duration",
+          "velocity_stretch_mul",
+          "velocity_stretch_cap"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "pattern": "^[A-Za-z0-9_]{2,64}$" },
+          "wrapper_vfx_key": { "type": "string" },
+          "template_emitter": { "type": "string" },
+          "texture_id": { "type": "string" },
+          "render_pass": {
+            "type": "string",
+            "enum": ["FULLRES_DEFERRED_ALPHA", "HALF_RES_DEFERRED_ALPHA"]
+          },
+          "pre_multiplied_alpha": { "type": "boolean" },
+          "omit_ps_lighting": { "type": "boolean", "default": true },
+          "start_time": { "type": "number", "minimum": 0 },
+          "duration": { "type": "number", "exclusiveMinimum": 0 },
+          "particle_life": {
+            "type": "array",
+            "items": { "type": "number", "exclusiveMinimum": 0 },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "emission_rate": { "type": "number", "minimum": 0, "maximum": 2000 },
+          "burst_count": { "type": "integer", "minimum": 0, "maximum": 500, "default": 0 },
+          "max_particles": { "type": "integer", "minimum": 1, "maximum": 1000 },
+          "billboard_orientation": { "type": "string", "enum": ["camera", "horizontal"], "default": "camera" },
+          "emitter_shape": {
+            "type": "string",
+            "enum": ["point", "sphere", "ring", "cylinder", "cone"],
+            "default": "ring"
+          },
+          "emitter_radius": { "type": "number", "minimum": 0, "default": 1.0 },
+          "emitter_height": { "type": "number", "minimum": 0, "default": 0.0 },
+          "offset_xyz": { "$ref": "#/$defs/vec3" },
+          "velocity_xyz": { "$ref": "#/$defs/vec3" },
+          "velocity_radial": { "type": "number", "default": 0.0 },
+          "gravity": { "type": "number", "default": 0.0 },
+          "drag": { "type": "number", "minimum": 0, "default": 0.0 },
+          "size_curve": { "$ref": "#/$defs/scalar_curve" },
+          "colour_curve": { "$ref": "#/$defs/vec3_curve" },
+          "alpha_curve": { "$ref": "#/$defs/scalar_curve" },
+          "colour_multiplier": { "type": "number", "minimum": 0, "maximum": 50, "default": 1.0 },
+          "emissive": { "type": "number", "minimum": 0, "maximum": 30, "default": 2.0 },
+          "additive_blend_mul": { "type": "number", "minimum": 0, "maximum": 5, "default": 0.75 },
+          "soft_factor": { "type": "number", "minimum": 0, "maximum": 20, "default": 1.5, "description": "WH3 ps_soft_edge ground/depth softening distance (use 3..8 for nebulae/clouds!)" },
+          "flipbook_grid": {
+            "type": "array",
+            "items": { "type": "integer", "minimum": 1, "maximum": 16 },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "flipbook_fps": { "type": "number", "minimum": 1, "maximum": 120, "default": 24.0 },
+          "velocity_stretch_mul": { "type": "number", "minimum": 0, "maximum": 4.0 },
+          "velocity_stretch_cap": { "type": "number", "minimum": 0, "maximum": 14.0 },
+          "vectorfield_texture_id": { "type": "string" },
+          "vectorfield_size": { "type": "number", "minimum": 1, "maximum": 300, "default": 40.0 },
+          "vectorfield_strength": { "type": "number", "minimum": 0, "maximum": 200, "default": 25.0 },
+          "vectorfield_tightness": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.65 }
+        }
+      }
+    },
+    "decal_emitters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "wrapper_vfx_key",
+          "texture_id",
+          "render_pass",
+          "pre_multiplied_alpha",
+          "keep_ps_lighting",
+          "start_time",
+          "life_time",
+          "radius_curve"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "pattern": "^[A-Za-z0-9_]{2,64}$" },
+          "wrapper_vfx_key": { "type": "string" },
+          "texture_id": { "type": "string" },
+          "render_pass": {
+            "type": "string",
+            "enum": ["DEFERRED_DECAL", "DEFERRED_DECAL_EMISSIVE"]
+          },
+          "pre_multiplied_alpha": { "type": "boolean" },
+          "keep_ps_lighting": { "type": "boolean" },
+          "start_time": { "type": "number", "minimum": 0 },
+          "life_time": { "type": "number", "exclusiveMinimum": 0 },
+          "radius_curve": { "$ref": "#/$defs/scalar_curve" },
+          "rotation_speed_deg": { "type": "number", "default": 0.0 },
+          "colour_curve": { "$ref": "#/$defs/vec3_curve" },
+          "alpha_curve": { "$ref": "#/$defs/scalar_curve" },
+          "colour_multiplier": { "type": "number", "minimum": 0, "maximum": 20, "default": 1.0 }
+        }
+      }
+    },
+    "distortion_emitters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "wrapper_vfx_key", "texture_id", "start_time", "life_time", "scale_curve"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "wrapper_vfx_key": { "type": "string" },
+          "texture_id": { "type": "string" },
+          "start_time": { "type": "number", "minimum": 0 },
+          "life_time": { "type": "number", "exclusiveMinimum": 0 },
+          "offset_xyz": { "$ref": "#/$defs/vec3" },
+          "scale_curve": { "$ref": "#/$defs/scalar_curve" },
+          "donor_library": { "type":"string" },
+          "donor_id": { "type":"string" },
+          "burst_count": { "type":"integer", "minimum":1, "maximum":12 },
+          "initial_alpha": { "type":"number", "minimum":0, "maximum":12 },
+          "window_sec": { "type":"number", "exclusiveMinimum":0 },
+          "soft_factor": { "type":"number", "exclusiveMinimum":0, "maximum":10 },
+          "soft_scale_strength": { "type":"number", "minimum":0,"maximum":1 },
+          "strength_curve": { "$ref": "#/$defs/scalar_curve" }
+        }
+      }
+    },
+    "lights": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "wrapper_vfx_key", "start_time", "life_time", "offset_xyz", "radius_curve", "colour_curve"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "wrapper_vfx_key": { "type": "string" },
+          "start_time": { "type": "number", "minimum": 0 },
+          "life_time": { "type": "number", "exclusiveMinimum": 0 },
+          "offset_xyz": { "$ref": "#/$defs/vec3" },
+          "radius_curve": { "$ref": "#/$defs/scalar_curve" },
+          "colour_curve": { "$ref": "#/$defs/vec3_curve" },
+          "intensity_curve": { "$ref": "#/$defs/scalar_curve" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "vec2": {
+      "type": "array",
+      "items": { "type": "number" },
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "vec3": {
+      "type": "array",
+      "items": { "type": "number" },
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "scalar_curve": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 28,
+      "items": {
+        "type": "array",
+        "items": { "type": "number" },
+        "minItems": 2,
+        "maxItems": 2,
+        "description": "[normalized_time_0_to_1, value]"
+      }
+    },
+    "vec3_curve": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 28,
+      "items": {
+        "type": "array",
+        "items": { "type": "number" },
+        "minItems": 4,
+        "maxItems": 4,
+        "description": "[normalized_time_0_to_1, x_or_r, y_or_g, z_or_b]"
+      }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+interface:
+  display_name: "战锤3 · 已审特效烘焙入包"
+  short_description: "核对宿主和基线，按已审沙箱写入指定 MOD 包并回读核验"
+  brand_color: "#10B981"
+  default_prompt: "用 $wh3-vfx-bake-pack 将我已签收的特效写入指定工作区包，按签收镜头从成品包重绘对照。"
+
+policy:
+  allow_implicit_invocation: true
